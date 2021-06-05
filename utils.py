@@ -106,3 +106,12 @@ def save_checkpoint(model, optimizer, epoch, critic_loss, actor_loss, policy_ent
             'average_episode_reward': average_episode_reward,
             'average_episode_length': average_episode_length,
         }, path)
+
+
+def load_checkpoint(model, optimizer, args):
+    checkpoint = os.path.expanduser(args.load)
+    checkpoint = torch.load(checkpoint)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    return model, optimizer

@@ -10,6 +10,7 @@ from play import random_walk_play
 from model import A2CModel
 from wrappers import WarpFrame, FrameStack
 from train import train
+from utils import load_checkpoint
 
 
 def main():
@@ -50,35 +51,26 @@ def main():
         logger.error("FeedForward check failed. Error message: {}".format(str(e)))
         raise e
 
+    try:
+        optimizer_func = torch.optim.__dict__[args.optimizer]
+    except KeyError as e:
+        logger.error(f'Optimizer {args.optimizer} does not found in torch.optim.')
+        exit()
+
+    if args.optimizer == 'RMSprop':
+        optimizer = optimizer_func(model.parameters(), lr=args.lr, eps=args.rmsprop_eps, alpha=args.rmsprop_alpha)
+
+    logger.info("\n|-------------|"
+                "\n|The Optimizer|"
+                "\n|-------------|\n"
+                "{}".format(optimizer))
+
     if args.load is not None:
-        checkpoint = os.path.expanduser(args.load)
-        checkpoint = torch.load(checkpoint)
-        logger.info('Loading Model ... ')
-        model.load_state_dict(checkpoint['model_state_dict'])
+        logger.info('Loading Checkpoint ... ')
+        model, optimizer = load_checkpoint(model, optimizer, args)
         logger.info('Done.')
 
     if args.train:
-        try:
-            optimizer_func = torch.optim.__dict__[args.optimizer]
-        except KeyError as e:
-            logger.error(f'Optimizer {args.optimizer} does not found in torch.optim.')
-            exit()
-
-        if args.optimizer == 'RMSprop':
-            optimizer = optimizer_func(model.parameters(), lr=args.lr, eps=args.rmsprop_eps, alpha=args.rmsprop_alpha)
-
-        if args.load is not None:
-            checkpoint = os.path.expanduser(args.load)
-            checkpoint = torch.load(checkpoint)
-            logger.info('Loading Optimizer ... ')
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            logger.info('Done.')
-
-        logger.info("\n|-------------|"
-                    "\n|The Optimizer|"
-                    "\n|-------------|\n"
-                    "{}".format(optimizer))
-
         try:
             value_loss_func = torch.nn.__dict__[args.value_loss]()
         except KeyError as e:
@@ -95,8 +87,6 @@ def main():
         except ValueError as ve:
             logger.error(ve)
             exit()
-
-
 
 
 if __name__ == '__main__':
