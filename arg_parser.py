@@ -79,6 +79,8 @@ def general_arg_parser(parser: ArgumentParser) -> ArgumentParser:
     general.add_argument('--override_save', default=False, action='store_true')
     general.add_argument('--save_interval', type=int, default=10000)
 
+    general.add_argument('--load', type=str)
+
     general.add_argument('--log', default=False, action='store_true')
     general.add_argument('--log_path', type=str)
     general.add_argument('--override_log', default=False, action='store_true')

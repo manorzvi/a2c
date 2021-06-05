@@ -1,3 +1,4 @@
+import os
 from loguru import logger
 import gym
 import torch
@@ -49,6 +50,13 @@ def main():
         logger.error("FeedForward check failed. Error message: {}".format(str(e)))
         raise e
 
+    if args.load is not None:
+        checkpoint = os.path.expanduser(args.load)
+        checkpoint = torch.load(checkpoint)
+        logger.info('Loading Model ... ')
+        model.load_state_dict(checkpoint['model_state_dict'])
+        logger.info('Done.')
+
     if args.train:
         try:
             optimizer_func = torch.optim.__dict__[args.optimizer]
@@ -58,6 +66,13 @@ def main():
 
         if args.optimizer == 'RMSprop':
             optimizer = optimizer_func(model.parameters(), lr=args.lr, eps=args.rmsprop_eps, alpha=args.rmsprop_alpha)
+
+        if args.load is not None:
+            checkpoint = os.path.expanduser(args.load)
+            checkpoint = torch.load(checkpoint)
+            logger.info('Loading Optimizer ... ')
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            logger.info('Done.')
 
         logger.info("\n|-------------|"
                     "\n|The Optimizer|"
