@@ -3,7 +3,7 @@ import torch
 from torch.distributions import Categorical
 from loguru import logger
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
-
+from pyglet.canvas.xlib import NoSuchDisplayException
 from wrappers import WarpFrame, FrameStack
 from utils import np2torch_obs, playing_log_msg
 
@@ -21,7 +21,10 @@ def random_walk_play(env, args):
         done = False
 
         _ = env.reset()
-        env.render()
+        try:
+            env.render()
+        except NoSuchDisplayException as e:
+            logger.warning(f'No Display detected. Skip env render')
         epoch_counter = 0
         # time.sleep(0.04)
 
@@ -35,7 +38,10 @@ def random_walk_play(env, args):
                 counter += 1
             else:
                 _, rewards, dones, info = env.step(actions)
-            env.render()
+            try:
+                env.render()
+            except NoSuchDisplayException as e:
+                logger.warning(f'No Display detected. Skip env render')
             epoch_counter += 1
             # time.sleep(0.004)
             done = dones if not isinstance(env, SubprocVecEnv) else any(dones)
@@ -68,7 +74,10 @@ def trained_agent_play(model, args):
 
     done = False
     obs = env.reset()
-    env.render()
+    try:
+        env.render()
+    except NoSuchDisplayException as e:
+        logger.warning(f'No Display detected. Skip env render')
     obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high)
     obs.to(args.device)
 
@@ -81,7 +90,10 @@ def trained_agent_play(model, args):
         actions = m.sample()
 
         obs, r, dones, info = env.step(actions.tolist())
-        env.render()
+        try:
+            env.render()
+        except NoSuchDisplayException as e:
+            logger.warning(f'No Display detected. Skip env render')
         obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high)
         obs.to(args.device)
 
