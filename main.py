@@ -10,7 +10,7 @@ from play import random_walk_play, trained_agent_play
 from model import A2CModel
 from wrappers import WarpFrame, FrameStack
 from train import train
-from utils import load_checkpoint, playing_log_msg
+from utils import load_checkpoint, general_log_msg
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
         env = FrameStack(env, args.frame_stack)
 
     if args.play:
-        random_walk_play(env, args)
+        random_walk_play(env, 1, args)
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -89,7 +89,7 @@ def main():
             exit()
 
     if args.play:
-        logger.info(playing_log_msg(trained_agent_play(model, args)))
+        logger.info(general_log_msg(total_reward=trained_agent_play(model, args)))
 
 
 if __name__ == '__main__':

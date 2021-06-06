@@ -36,41 +36,31 @@ def np2torch_obs(obs: np.ndarray, low: np.ndarray, high: np.ndarray) -> torch.te
     return obs
 
 
-def training_log_msg(update, actor_loss, critic_loss, policy_entroy, episode_reward, episode_length, args):
-    update_msg = "update#{}".format(update+1,)
-    timestep_msg = "timestep#{}".format((update+1)*args.n_steps)
-    actor_loss_msg = "actor_loss={0:.6f}".format(actor_loss)
-    critic_loss_msg = "critic_loss={0:.6f}".format(critic_loss)
-    policy_entroy_msg = "policy_entropy={0:.6f}".format(policy_entroy)
-    episode_reward_msg = "average_episode_reward={0:.2f}".format(episode_reward) if episode_reward is not None else ''
-    episode_length_msg = "average_episode_length={0:.2f}".format(episode_length) if episode_length is not None else ''
-
-    frame_width = max([len(update_msg),
-                       len(timestep_msg),
-                       len(actor_loss_msg),
-                       len(critic_loss_msg),
-                       len(policy_entroy_msg),
-                       len(episode_length_msg),
-                       len(episode_reward_msg)])
-
-    msg = '\n|' + '-' * frame_width + '|\n' +\
-          '|' + update_msg + ' ' * (frame_width-len(update_msg)) + '|\n' + \
-          '|' + timestep_msg + ' ' * (frame_width-len(timestep_msg)) + '|\n' + \
-          '|' + actor_loss_msg + ' ' * (frame_width-len(actor_loss_msg)) + '|\n' + \
-          '|' + critic_loss_msg + ' ' * (frame_width-len(critic_loss_msg)) + '|\n' + \
-          '|' + policy_entroy_msg + ' ' * (frame_width-len(policy_entroy_msg)) + '|\n' + \
-          '|' + episode_reward_msg + ' ' * (frame_width - len(episode_reward_msg)) + '|\n' + \
-          '|' + episode_length_msg + ' ' * (frame_width - len(episode_length_msg)) + '|\n' + \
-          '|' + '-' * frame_width + '|'
-
-    return msg
-
-
 def playing_log_msg(total_rewards):
     msg_ = "Total Reward per Agent: {}".format(str([total_rewards])[2:-2])
     msg = '\n|' + '-' * len(msg_) + '|\n' + \
           '|' + msg_ + '|\n' + \
           '|' + '-' * len(msg_) + '|'
+
+    return msg
+
+
+def general_log_msg(**kwargs):
+    messages = []
+    for key, value in kwargs.items():
+        if isinstance(value, float):
+            messages.append("{0}={1:.6f}".format(key, value))
+        else:
+            messages.append("{}={}".format(key, value))
+
+    frame_width = max([len(m) for m in messages])
+
+    msg = '\n|' + '-' * frame_width + '|\n'
+    for m in messages:
+        msg += '|'
+        msg += m
+        msg += ' ' * (frame_width - len(m)) + '|\n'
+    msg += '|' + '-' * frame_width + '|\n'
 
     return msg
 
@@ -115,3 +105,7 @@ def load_checkpoint(model, optimizer, args):
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     return model, optimizer
+
+
+if __name__ == '__main__':
+    general_log_msg(bla='blob', bli='blib')

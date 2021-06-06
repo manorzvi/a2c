@@ -8,7 +8,7 @@ from wrappers import WarpFrame, FrameStack
 from utils import np2torch_obs, playing_log_msg
 
 
-def random_walk_play(env, args):
+def random_walk_play(env, epochs, args):
     logger.info(f"Hi! Welcome to Random Walk Play =D The Place where too much Alcohol and not enough sleep hours meet")
 
     if args.timer:
@@ -17,7 +17,7 @@ def random_walk_play(env, args):
         counter = 0
         logger.info("env.step execution time will be measured.")
 
-    for epoch in range(10):
+    for epoch in range(epochs):
         done = False
 
         _ = env.reset()
@@ -84,7 +84,7 @@ def trained_agent_play(model, args):
         actions = m.sample()
 
         obs, r, dones, info = env.step(actions.tolist())
-        if args.render: 
+        if args.render:
             env.render()
         obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high)
         obs.to(args.device)

@@ -1,5 +1,5 @@
 import os
-import json
+from timeit import default_timer as timer
 import torch
 from utils import np2torch_obs
 from torch.distributions import Categorical
@@ -9,7 +9,7 @@ from loguru import logger
 
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 
-from utils import training_log_msg, playing_log_msg, save_checkpoint
+from utils import save_checkpoint, general_log_msg
 from play import trained_agent_play
 
 
@@ -42,7 +42,14 @@ def train(model, env, value_loss_func, optimizer, args):
     episode_reward = [0 for _ in range(args.n_env)]
     episode_length = [0 for _ in range(args.n_env)]
 
+    if args.timer:
+        update_timers = []
+        step_timers = []
+
     for update in tqdm(range(args.n_updates)):
+
+        if args.timer:
+            update_loop_start = timer()
 
         for step in range(args.n_steps):
 
@@ -73,6 +80,10 @@ def train(model, env, value_loss_func, optimizer, args):
                 episode_length = [l * (1 - d.astype(int)) for l, d in zip(episode_length, dones)]
                 episode_reward = [r * (1 - d.astype(int)) for r, d in zip(episode_reward, dones)]
 
+        if args.timer:
+            step_loop_end = timer()
+            step_timers.append(step_loop_end-update_loop_start)
+
         del step
 
         with torch.no_grad():
@@ -94,11 +105,42 @@ def train(model, env, value_loss_func, optimizer, args):
         value_loss = value_loss_func(trace_return[:-1], values)
         action_loss = -(advantage.detach() * log_probs).mean()
 
+        optimizer.zero_grad()
+        value_loss.backward(retain_graph=True)
+        action_loss.backward()
+        optimizer.step()
+
+        trace_obs[0]    = trace_obs[-1]
+        trace_mask[0]   = trace_mask[-1]
+
+        if args.timer:
+            update_loop_end = timer()
+            update_timers.append(update_loop_end-update_loop_start)
+
         if args.log:
             if (update * args.n_steps) % args.log_interval == 0:
-                log_msg = training_log_msg(update, action_loss.item(), value_loss.item(), entropy_probs.item(),
-                                           sum(average_episode_reward)/len(average_episode_reward) if len(average_episode_reward) > 0 else None,
-                                           sum(average_episode_length)/len(average_episode_length) if len(average_episode_length) > 0 else None, args)
+                if args.timer:
+                    log_msg = general_log_msg(update=update,
+                                              policy_loss=action_loss.item(),
+                                              critic_loss=value_loss.item(), policy_entropy=entropy_probs.item(),
+                                              average_episode_reward=(sum(average_episode_reward)/len(average_episode_reward) if
+                                                                      len(average_episode_reward) > 0 else None),
+                                              average_episode_length=(sum(average_episode_length)/len(average_episode_length) if
+                                                                      len(average_episode_length) > 0 else None),
+                                              s_per_update=(sum(update_timers) / len(update_timers)),
+                                              update_iter_per_s=(1/(sum(update_timers)/len(update_timers))),
+                                              s_per_step=((sum(step_timers) / len(step_timers))/args.n_steps),
+                                              step_iter_per_s=(args.n_steps/(sum(step_timers)/len(step_timers)))
+                                              )
+                else:
+                    log_msg = general_log_msg(update=update,
+                                              policy_loss=action_loss.item(),
+                                              critic_loss=value_loss.item(), policy_entropy=entropy_probs.item(),
+                                              average_episode_reward=(sum(average_episode_reward)/len(average_episode_reward) if
+                                                                      len(average_episode_reward) > 0 else None),
+                                              average_episode_length=(sum(average_episode_length)/len(average_episode_length) if
+                                                                      len(average_episode_length) > 0 else None)
+                                              )
                 logger.info(log_msg)
 
         if args.save:
@@ -113,15 +155,7 @@ def train(model, env, value_loss_func, optimizer, args):
 
         if args.evaluate:
             if (update * args.n_steps) % args.evaluate_interval == 0:
-                logger.info(playing_log_msg(trained_agent_play(model, args)))
-
-        optimizer.zero_grad()
-        value_loss.backward(retain_graph=True)
-        action_loss.backward()
-        optimizer.step()
-
-        trace_obs[0]    = trace_obs[-1]
-        trace_mask[0]   = trace_mask[-1]
+                logger.info(general_log_msg(total_reward=trained_agent_play(model, args)))
 
     checkpoint_name = '{}.pth'.format(update * args.n_steps)
     checkpoint_name = os.path.expanduser(os.path.join(args.save_path, checkpoint_name))
