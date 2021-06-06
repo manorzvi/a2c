@@ -45,7 +45,7 @@ def main():
                 '\n|---------|\n'
                 '{}'.format(str(model)))
     try:
-        model.check(env)
+        model.check(env, args)
         logger.info(f"FeedForward check passed")
     except Exception as e:
         logger.error("FeedForward check failed. Error message: {}".format(str(e)))

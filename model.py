@@ -68,9 +68,9 @@ class A2CModel(nn.Module):
     def calc_conv_output_shape(conv_input_shape, padding, dilation, kernel, stride):
         return int(np.floor((conv_input_shape + (2 * padding) - (dilation * (kernel-1)) - 1) / stride) + 1)
 
-    def check(self, env):
+    def check(self, env, args):
         obs = env.reset()
-        obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high)
+        obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high).to(args.device)
         logger.debug(f"Input obs.size={obs.size()}, obs.dtype={obs.dtype}")
         try:
             with torch.no_grad():
