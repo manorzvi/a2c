@@ -36,15 +36,6 @@ def np2torch_obs(obs: np.ndarray, low: np.ndarray, high: np.ndarray) -> torch.te
     return obs
 
 
-def playing_log_msg(total_rewards):
-    msg_ = "Total Reward per Agent: {}".format(str([total_rewards])[2:-2])
-    msg = '\n|' + '-' * len(msg_) + '|\n' + \
-          '|' + msg_ + '|\n' + \
-          '|' + '-' * len(msg_) + '|'
-
-    return msg
-
-
 def general_log_msg(**kwargs):
     messages = []
     for key, value in kwargs.items():

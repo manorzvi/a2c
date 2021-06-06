@@ -46,16 +46,10 @@ def check_args(args: Namespace) -> Namespace:
 
 
 def _make_name(args: Namespace) -> str:
-    return f'{args.env}|alg={args.alg}|n_env={args.n_env}|n_timesteps={args.n_timesteps}|n_steps={args.n_steps}|frame_stack={args.frame_stack}'
+    return f'{args.env}|alg={args.alg}|n_env={args.n_env}|n_timesteps={args.n_timesteps}|n_steps={args.n_steps}|frame_stack={args.frame_stack}|cuda={args.cuda}'
 
 
 def make_auto_args(args: Namespace) -> Namespace:
-    if args.name is None:
-        args.name = _make_name(args)
-    if args.save and args.save_path is None:
-        args.save_path = os.path.expanduser(os.path.join(os.getcwd(), 'models', args.name))
-    if args.log and args.log_path is None:
-        args.log_path = os.path.expanduser(os.path.join(os.getcwd(), 'logs', args.name))
 
     args.env_type = get_env_type(args.env)
 
@@ -66,6 +60,13 @@ def make_auto_args(args: Namespace) -> Namespace:
     args.device = torch.device("cuda:0" if args.cuda else "cpu")
 
     args.n_updates = args.n_timesteps // args.n_steps
+
+    if args.name is None:
+        args.name = _make_name(args)
+    if args.save and args.save_path is None:
+        args.save_path = os.path.expanduser(os.path.join(os.getcwd(), 'models', args.name))
+    if args.log and args.log_path is None:
+        args.log_path = os.path.expanduser(os.path.join(os.getcwd(), 'logs', args.name))
 
     return args
 

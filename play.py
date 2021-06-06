@@ -5,7 +5,7 @@ from loguru import logger
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 
 from wrappers import WarpFrame, FrameStack
-from utils import np2torch_obs, playing_log_msg
+from utils import np2torch_obs
 
 
 def random_walk_play(env, epochs, args):
