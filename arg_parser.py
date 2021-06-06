@@ -107,6 +107,8 @@ def env_arg_parser(parser: ArgumentParser) -> ArgumentParser:
     env.add_argument('--frame_channel', default=1,  type=int)
     env.add_argument('--frame_stack',   default=4,  type=int)
 
+    env.add_argument('--render', default=False, action='store_true')
+
     return parser
 
 
