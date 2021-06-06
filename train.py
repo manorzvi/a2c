@@ -123,4 +123,12 @@ def train(model, env, value_loss_func, optimizer, args):
         trace_obs[0]    = trace_obs[-1]
         trace_mask[0]   = trace_mask[-1]
 
+    checkpoint_name = '{}.pth'.format(update * args.n_steps)
+    checkpoint_name = os.path.expanduser(os.path.join(args.save_path, checkpoint_name))
+    logger.info('Saving final checkpoint {} at {} ...'.format(checkpoint_name, update * args.n_steps))
+    save_checkpoint(model, optimizer, update, value_loss.item(), action_loss.item(),
+                    entropy_probs.item(), average_episode_reward, average_episode_length, checkpoint_name,
+                    args, first=(update == 0))
+    logger.info('Done.')
+
     model.eval()

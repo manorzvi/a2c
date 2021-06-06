@@ -6,11 +6,11 @@ import torch
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 
 from arg_parser import common_arg_parser, make_auto_args, check_args
-from play import random_walk_play
+from play import random_walk_play, trained_agent_play
 from model import A2CModel
 from wrappers import WarpFrame, FrameStack
 from train import train
-from utils import load_checkpoint
+from utils import load_checkpoint, playing_log_msg
 
 
 def main():
@@ -49,7 +49,7 @@ def main():
         logger.info(f"FeedForward check passed")
     except Exception as e:
         logger.error("FeedForward check failed. Error message: {}".format(str(e)))
-        raise e
+        exit("FeedForward check failed. Error message: {}".format(str(e)))
 
     try:
         optimizer_func = torch.optim.__dict__[args.optimizer]
@@ -65,6 +65,17 @@ def main():
                 "\n|-------------|\n"
                 "{}".format(optimizer))
 
+    try:
+        value_loss_func = torch.nn.__dict__[args.value_loss]()
+    except KeyError as e:
+        logger.error(f'Value Loss {args.value_loss} does not found in torch.nn.')
+        exit()
+
+    logger.info("\n|--------------|"
+                "\n|The Value Loss|"
+                "\n|--------------|\n"
+                "{}".format(value_loss_func))
+
     if args.load is not None:
         logger.info('Loading Checkpoint ... ')
         model, optimizer = load_checkpoint(model, optimizer, args)
@@ -72,21 +83,13 @@ def main():
 
     if args.train:
         try:
-            value_loss_func = torch.nn.__dict__[args.value_loss]()
-        except KeyError as e:
-            logger.error(f'Value Loss {args.value_loss} does not found in torch.nn.')
-            exit()
-
-        logger.info("\n|--------------|"
-                    "\n|The Value Loss|"
-                    "\n|--------------|\n"
-                    "{}".format(value_loss_func))
-
-        try:
             train(model, env, value_loss_func, optimizer, args)
         except ValueError as ve:
             logger.error(ve)
             exit()
+
+    if args.play:
+        logger.info(playing_log_msg(trained_agent_play(model, args)))
 
 
 if __name__ == '__main__':
