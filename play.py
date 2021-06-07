@@ -73,8 +73,7 @@ def trained_agent_play(model, args):
     if args.render:
         env.render()
     obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high)
-    obs.to(args.device)
-
+    obs = obs.to(args.device)
     total_rewards = [0 for _ in range(args.n_env)]
 
     while not done:
@@ -87,7 +86,7 @@ def trained_agent_play(model, args):
         if args.render:
             env.render()
         obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high)
-        obs.to(args.device)
+        obs = obs.to(args.device)
 
         total_rewards = [x+y for x, y in zip(total_rewards, r)]
 

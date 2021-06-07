@@ -31,8 +31,7 @@ def train(model, env, value_loss_func, optimizer, args):
 
     obs = env.reset()
     # env.render()
-    obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high)
-    obs.to(args.device)
+    obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high).to(args.device)
 
     trace_obs[0] = obs
 
@@ -63,8 +62,7 @@ def train(model, env, value_loss_func, optimizer, args):
 
             obs, rewards, dones, infos = env.step(actions.tolist())
             # env.render()
-            obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high)
-            obs.to(args.device)
+            obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high).to(args.device)
 
             episode_reward = [x+r for x, r in zip(episode_reward, rewards)]
 
