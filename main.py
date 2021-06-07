@@ -8,7 +8,7 @@ from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from arg_parser import common_arg_parser, make_auto_args, check_args
 from play import random_walk_play, trained_agent_play
 from model import A2CModel
-from wrappers import WarpFrame, FrameStack
+from wrappers import WarpFrame, FrameStack, EpisodicLifeEnv
 from train import train
 from utils import load_checkpoint, general_log_msg
 
@@ -20,9 +20,11 @@ def main():
     logger.info('\n' + str(args)[len('Namespace')+1:-1].replace(', ', '\n'))
 
     if args.n_env > 1:
-        env = [lambda: FrameStack(WarpFrame(gym.make(args.env), width=args.frame_width,
-                                                                height=args.frame_height,
-                                                                grayscale=(args.frame_channel == 1)), args.frame_stack)
+        env = [lambda: FrameStack(WarpFrame(EpisodicLifeEnv(gym.make(args.env)),
+                                            width=args.frame_width,
+                                            height=args.frame_height,
+                                            grayscale=(args.frame_channel == 1)),
+                                  args.frame_stack)
                for i in range(args.n_env)]
         # TODO: Add VecActionSpaceWrapper: Vectorized Action Space for clean and easy action sampling (manorz, 05/30/21)
         # TODO (2): Add support In-Process Vectorized envs (similar to: 'Accelerated Methods for Deep Reinforcement Learning').
@@ -30,6 +32,7 @@ def main():
         env = SubprocVecEnv(env)
     else:
         env = gym.make(args.env)
+        env = EpisodicLifeEnv(env)
         env = WarpFrame(env, width=args.frame_width, height=args.frame_height, grayscale=(args.frame_channel == 1))
         env = FrameStack(env, args.frame_stack)
 

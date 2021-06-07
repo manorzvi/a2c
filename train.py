@@ -42,10 +42,22 @@ def train(model, env, value_loss_func, optimizer, args):
     episode_length = [0 for _ in range(args.n_env)]
 
     if args.timer:
-        update_timers = []
-        step_timers = []
+        model_feedforward_actor_timers  = []
+        model_feedforward_value_timers  = []
+        model_feedforward_timers        = []
+        model_backprop_timers           = []
+        env_step_timers                 = []
+        update_timers                   = []
+        step_timers                     = []
+
+    # Record original timer choice
+    args.original_timer = args.timer
 
     for update in tqdm(range(args.n_updates)):
+
+        # Collect timers data only for last 100 iterations before logging interval
+        if (update * args.n_steps) % args.log_interval == (args.log_interval - 100):
+            args.timer = args.original_timer
 
         if args.timer:
             update_loop_start = timer()
@@ -55,13 +67,28 @@ def train(model, env, value_loss_func, optimizer, args):
             episode_length = [x+1 for x in episode_length]
 
             with torch.no_grad():
+
+                if args.timer:
+                    start = timer()
+
                 policies = model.forward_actor(trace_obs[step])
+
+                if args.timer:
+                    end = timer()
+                    model_feedforward_actor_timers.append(end - start)
 
             m = Categorical(logits=policies)
             actions = m.sample()  # TODO: maybe need here to move actions (before env.step) back to cpu (need to check on gpu)
 
+            if args.timer:
+                start = timer()
+
             obs, rewards, dones, infos = env.step(actions.tolist())
-            # env.render()
+
+            if args.timer:
+                end = timer()
+                env_step_timers.append(end - start)
+
             obs = np2torch_obs(obs, env.observation_space.low, env.observation_space.high).to(args.device)
 
             episode_reward = [x+r for x, r in zip(episode_reward, rewards)]
@@ -85,13 +112,29 @@ def train(model, env, value_loss_func, optimizer, args):
         del step
 
         with torch.no_grad():
+
+            if args.timer:
+                start = timer()
+
             next_value = model.forward_critic(trace_obs[-1])
+
+            if args.timer:
+                end = timer()
+                model_feedforward_value_timers.append(end - start)
 
         trace_return[-1] = next_value.squeeze(1)
         for step in reversed(range(args.n_steps)):
             trace_return[step] = trace_reward[step] + args.gamma * trace_return[step + 1] * trace_mask[step]
 
+        if args.timer:
+            start = timer()
+
         policies, values = model(trace_obs[:-1].view(-1, *obs_shape))
+
+        if args.timer:
+            end = timer()
+            model_feedforward_timers.append(end - start)
+
         m = Categorical(logits=policies)
         log_probs = m.log_prob(trace_action.view(-1))
         entropy_probs = m.entropy().mean()  # TODO: Consider to subtract the action entropy from the action loss, as in: 'Diversity Actor-Critic: Sample-Aware Entropy Regularization for Sample-Efficient Exploration' (manorz, 06/03/21)
@@ -103,10 +146,17 @@ def train(model, env, value_loss_func, optimizer, args):
         value_loss = value_loss_func(trace_return[:-1], values)
         action_loss = -(advantage.detach() * log_probs).mean()
 
+        if args.timer:
+            start = timer()
+
         optimizer.zero_grad()
         value_loss.backward(retain_graph=True)
         action_loss.backward()
         optimizer.step()
+
+        if args.timer:
+            end = timer()
+            model_backprop_timers.append(end - start)
 
         trace_obs[0]    = trace_obs[-1]
         trace_mask[0]   = trace_mask[-1]
@@ -126,10 +176,23 @@ def train(model, env, value_loss_func, optimizer, args):
                                               average_episode_length=(sum(average_episode_length)/len(average_episode_length) if
                                                                       len(average_episode_length) > 0 else None),
                                               s_per_update=(sum(update_timers) / len(update_timers)),
-                                              update_iter_per_s=(1/(sum(update_timers)/len(update_timers))),
                                               s_per_step=((sum(step_timers) / len(step_timers))/args.n_steps),
-                                              step_iter_per_s=(args.n_steps/(sum(step_timers)/len(step_timers)))
+                                              s_per_actor_feedforward=(sum(model_feedforward_actor_timers) / len(model_feedforward_actor_timers)),
+                                              s_per_env_step=(sum(env_step_timers) / len(env_step_timers)),
+                                              s_per_value_feedforward=(sum(model_feedforward_value_timers) / len(model_feedforward_value_timers)),
+                                              s_per_model_feedforward=(sum(model_feedforward_timers) / len(model_feedforward_timers)),
+                                              s_per_model_backprop=(sum(model_backprop_timers) / len(model_backprop_timers))
                                               )
+
+                    # Reset timer until next logging interval
+                    args.timer = False
+                    model_feedforward_actor_timers  = []
+                    model_feedforward_value_timers  = []
+                    model_feedforward_timers        = []
+                    model_backprop_timers           = []
+                    env_step_timers                 = []
+                    update_timers                   = []
+                    step_timers                     = []
                 else:
                     log_msg = general_log_msg(update=update,
                                               policy_loss=action_loss.item(),

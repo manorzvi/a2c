@@ -78,7 +78,7 @@ def general_arg_parser(parser: ArgumentParser) -> ArgumentParser:
     general.add_argument('--save', default=False, action='store_true')
     general.add_argument('--save_path', type=str)
     general.add_argument('--override_save', default=False, action='store_true')
-    general.add_argument('--save_interval', type=int, default=10000)
+    general.add_argument('--save_interval', type=int, default=100000)
 
     general.add_argument('--load', type=str)
 
@@ -88,7 +88,6 @@ def general_arg_parser(parser: ArgumentParser) -> ArgumentParser:
     general.add_argument('--log_interval', type=int, default=10000)
 
     general.add_argument('--play', '-p', default=False, action='store_true')
-    general.add_argument('--interactive_play', '-interactive_p', default=False, action='store_true')
 
     general.add_argument('--name', type=str)
     general.add_argument('--cuda', default=False, action='store_true')
