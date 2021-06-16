@@ -56,12 +56,13 @@ def measure_state_difference(model, env, render=True, plot=True):
 
         prev_obs = obs.copy()
 
-    fig, axes = plt.subplots(1, 2)
-    axes[0].plot(l2_diffs[c-1:-1])
-    axes[0].set_title('L2 Diff')
-    axes[1].plot(pixel_diffs[c-1:-1])
-    axes[1].set_title('Pixel Diff')
-    plt.show()
+    if plot:
+        fig, axes = plt.subplots(1, 2)
+        axes[0].plot(l2_diffs[c-1:-1])
+        axes[0].set_title('L2 Diff')
+        axes[1].plot(pixel_diffs[c-1:-1])
+        axes[1].set_title('Pixel Diff')
+        plt.show()
 
 
 if __name__ == '__main__':
