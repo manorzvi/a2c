@@ -58,6 +58,7 @@ def make_args(args: Namespace) -> Namespace:
             'policy':   args.policy,
             'env':      args.env,
             'n_steps':  args.n_steps,
+            'tensorboard_log': args.log_path,
             'verbose':  args.verbose
         }
 
