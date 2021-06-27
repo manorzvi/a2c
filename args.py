@@ -26,7 +26,7 @@ def common_args() -> Namespace:
     parser.add_argument('--timesteps', '-t',        type=int, required=True)
     parser.add_argument('--seed', '-s',             type=int, default=42)
     parser.add_argument('--eval_interval', '-e_i',  type=int, default=1000)
-    parser.add_argument('--ckpt_interval', '-c_i',  type=int, default=10000)
+    parser.add_argument('--ckpt_interval', '-c_i',  type=int, default=1000)
     parser.add_argument('--log_path',               type=str)
 
     parser.add_argument('--verbose', '-v',      type=int, default=1,
@@ -53,6 +53,13 @@ def make_args(args: Namespace) -> Namespace:
     if args.log_path is None:
         log_path = os.path.join('logs', args.name)
         args.log_path = log_path
+    if args.alg == 'a2c':
+        args.model_kwargs = {
+            'policy':   args.policy,
+            'env':      args.env,
+            'n_steps':  args.n_steps,
+            'verbose':  args.verbose
+        }
 
     return args
 
